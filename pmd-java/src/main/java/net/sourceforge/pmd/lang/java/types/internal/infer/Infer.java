@@ -51,7 +51,6 @@ public final class Infer {
 
     public final TypeInferenceLogger LOG; // SUPPRESS CHECKSTYLE just easier to read I think
 
-    private final boolean isPreJava8;
     private final TypeSystem ts;
 
     private final MethodCtDecl NO_CTDECL; // SUPPRESS CHECKSTYLE same
@@ -71,7 +70,6 @@ public final class Infer {
      */
     public Infer(TypeSystem ts, int jdkVersion, TypeInferenceLogger logger) {
         this.ts = ts;
-        this.isPreJava8 = jdkVersion < 8;
         this.LOG = logger;
 
         this.NO_CTDECL = MethodCtDecl.unresolved(ts);
@@ -81,7 +79,7 @@ public final class Infer {
     }
 
     public boolean isPreJava8() {
-        return isPreJava8;
+        return false;
     }
 
     public TypeSystem getTypeSystem() {
@@ -582,7 +580,7 @@ public final class Infer {
 
         try {
 
-            if (phase.isInvocation() && !isPreJava8) {
+            if (phase.isInvocation()) {
                 m = doReturnChecksAndChangeReturnType(m, site, infCtx);
             }
 
@@ -600,7 +598,7 @@ public final class Infer {
                 InferenceContext ctxCopy = infCtx.shallowCopy();
                 LOG.applicabilityTest(ctxCopy);
                 try {
-                    ctxCopy.solve(/*onlyBoundedVars:*/isPreJava8());
+                    ctxCopy.solve(/*onlyBoundedVars:*/false);
                 } finally {
                     LOG.finishApplicabilityTest();
                 }
@@ -642,21 +640,7 @@ public final class Infer {
         }
 
         // this may throw for incompatible bounds
-        boolean isDone = infCtx.solve(/*onlyBoundedVars:*/isPreJava8());
-
-        if (isPreJava8() && !isDone) {
-            // this means we're not in an invocation context,
-            // if we are, we must ignore it in java 7
-            if (site.getOuterCtx().isEmpty()) {
-                // Then add the return contraints late
-                // Java 7 only uses the context type if the arguments are not enough
-                // https://docs.oracle.com/javase/specs/jls/se7/html/jls-15.html#jls-15.12.2.8
-                m = doReturnChecksAndChangeReturnType(m, site, infCtx);
-            }
-            // otherwise force solving remaining vars
-            infCtx.solve();
-        }
-
+        infCtx.solve(/*onlyBoundedVars:*/false);
         // instantiate vars and return
         return InferenceContext.finalGround(infCtx.mapToIVars(m));
     }
@@ -671,8 +655,7 @@ public final class Infer {
 
 
     private boolean shouldPropagateOutwards(JTypeMirror resultType, MethodCallSite target, InferenceContext inferenceContext) {
-        return !isPreJava8
-            && !target.getOuterCtx().isEmpty()  //enclosing context is a generic method
+        return !target.getOuterCtx().isEmpty()  //enclosing context is a generic method
             && !inferenceContext.isGround(resultType)   //return type contains inference vars
             && !(resultType instanceof InferenceVar    //no eager instantiation is required (as per 18.5.2)
             && needsEagerInstantiation((InferenceVar) resultType, target.getExpectedType(), inferenceContext));

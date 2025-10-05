@@ -5,14 +5,12 @@
 package net.sourceforge.pmd.lang.java.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import net.sourceforge.pmd.lang.ast.ParseException;
 import net.sourceforge.pmd.lang.java.BaseParserTest;
 
 class ASTImportDeclarationTest extends BaseParserTest {
@@ -34,11 +32,6 @@ class ASTImportDeclarationTest extends BaseParserTest {
         List<ASTImportDeclaration> ops = java.getNodes(ASTImportDeclaration.class, TEST3);
         ASTImportDeclaration i = ops.get(0);
         assertTrue(i.isStatic());
-    }
-
-    @Test
-    void testStaticImportFailsWithJDK14() {
-        assertThrows(ParseException.class, () -> java.parse(TEST3, "1.4"));
     }
 
     private static final String TEST1 = "import foo.bar.*;\npublic class Foo {}";

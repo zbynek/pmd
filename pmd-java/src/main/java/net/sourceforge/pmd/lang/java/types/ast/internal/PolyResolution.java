@@ -106,10 +106,6 @@ public final class PolyResolution {
         this.intCtx = numericContexts.get(PrimitiveTypeKind.INT);
     }
 
-    private boolean isPreJava8() {
-        return infer.isPreJava8();
-    }
-
     JTypeMirror computePolyType(final TypeNode e) {
         if (!canBePoly(e)) {
             throw shouldNotReachHere("Unknown poly " + e);
@@ -136,17 +132,6 @@ public final class PolyResolution {
         } else if (e instanceof ASTSwitchExpression || e instanceof ASTConditionalExpression) {
             // Those are standalone if possible, otherwise they take
             // the target type
-
-            // in java 7 they are always standalone
-            if (isPreJava8()) {
-                // safe cast because ASTSwitchExpression doesn't exist pre java 13
-                ASTConditionalExpression conditional = (ASTConditionalExpression) e;
-                return computeStandaloneConditionalType(
-                    this.ts,
-                    conditional.getThenBranch().getTypeMirror(),
-                    conditional.getElseBranch().getTypeMirror()
-                );
-            }
 
             // Note that this creates expr mirrors for all subexpressions,
             // and may trigger inference on them (which does not go through PolyResolution).
@@ -440,11 +425,6 @@ public final class PolyResolution {
             if (papi instanceof ASTExplicitConstructorInvocation || papi instanceof ASTEnumConstant) {
                 return newInvocContext(papi, node.getIndexInParent());
             } else {
-                if (isPreJava8()) {
-                    // in java < 8 invocation contexts don't provide a target type
-                    return ExprContext.getMissingInstance();
-                }
-
                 if (!internalUse) {
                     // Only in type resolution do we need to fetch the outermost context
                     return newInvocContext(papi, node.getIndexInParent());
@@ -553,10 +533,6 @@ public final class PolyResolution {
             if (node.getIndexInParent() == 0) {
                 return booleanCtx; // the condition
             } else {
-                // a branch
-                if (isPreJava8()) {
-                    return ExprContext.getMissingInstance();
-                }
                 assert InternalApiBridge.isStandaloneInternal((ASTConditionalExpression) papa)
                     : "Expected standalone ternary, otherwise doesCascadeContext(..) would have returned true";
 
@@ -648,9 +624,6 @@ public final class PolyResolution {
     private boolean doesCascadesContext(JavaNode node, JavaNode child, boolean internalUse) {
         if (child.getParent() != node) {
             // means the "node" is a "stop recursion because no context" result in contextOf
-            return false;
-        } else if (isPreJava8()) {
-            // in java < 8, context doesn't flow through ternaries
             return false;
         } else if (!internalUse
             && node instanceof ASTConditionalExpression
