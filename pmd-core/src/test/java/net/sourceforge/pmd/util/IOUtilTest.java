@@ -6,12 +6,12 @@ package net.sourceforge.pmd.util;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,6 +29,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
@@ -51,9 +52,7 @@ class IOUtilTest {
     void testToByteArrayResize() throws IOException {
         int size = 8192 + 8192 + 10;
         byte[] data = new byte[size];
-        for (int i = 0; i < size; i++) {
-            data[i] = 'A';
-        }
+        Arrays.fill(data, (byte) 'A');
         try (InputStream stream = new ByteArrayInputStream(data)) {
             byte[] bytes = IOUtil.toByteArray(stream);
             assertEquals(size, bytes.length);
@@ -86,63 +85,64 @@ class IOUtilTest {
     }
 
     @Test
-    void testNormalizePath() {
-        if (SystemUtils.IS_OS_UNIX) {
-            assertEquals("ab/cd.txt", IOUtil.normalizePath("ab/ef/../cd.txt"));
-            assertEquals("/a.txt", IOUtil.normalizePath("/x/../../a.txt"));
-            assertEquals("/foo", IOUtil.normalizePath("//../foo"));
-            assertEquals("/foo", IOUtil.normalizePath("/foo//"));
-            assertEquals("/foo", IOUtil.normalizePath("/foo/./"));
-            assertEquals("/bar", IOUtil.normalizePath("/foo/../bar"));
-            assertEquals("/bar", IOUtil.normalizePath("/foo/../bar/"));
-            assertEquals("/baz", IOUtil.normalizePath("/foo/../bar/../baz"));
-            assertEquals("/foo/bar", IOUtil.normalizePath("//foo//./bar"));
-            assertEquals("foo", IOUtil.normalizePath("foo/bar/.."));
-            assertEquals("bar", IOUtil.normalizePath("foo/../bar"));
-            assertEquals("/foo/baz", IOUtil.normalizePath("//foo/bar/../baz"));
-            assertEquals("~/bar", IOUtil.normalizePath("~/foo/../bar/"));
-            assertEquals("/", IOUtil.normalizePath("/../"));
-            assertEquals("bar", IOUtil.normalizePath("~/../bar"));
-            assertEquals("bar", IOUtil.normalizePath("./bar"));
+    void testNormalizePathUnix() {
+        assumeTrue(SystemUtils.IS_OS_UNIX);
+        assertEquals("ab/cd.txt", IOUtil.normalizePath("ab/ef/../cd.txt"));
+        assertEquals("/a.txt", IOUtil.normalizePath("/x/../../a.txt"));
+        assertEquals("/foo", IOUtil.normalizePath("//../foo"));
+        assertEquals("/foo", IOUtil.normalizePath("/foo//"));
+        assertEquals("/foo", IOUtil.normalizePath("/foo/./"));
+        assertEquals("/bar", IOUtil.normalizePath("/foo/../bar"));
+        assertEquals("/bar", IOUtil.normalizePath("/foo/../bar/"));
+        assertEquals("/baz", IOUtil.normalizePath("/foo/../bar/../baz"));
+        assertEquals("/foo/bar", IOUtil.normalizePath("//foo//./bar"));
+        assertEquals("foo", IOUtil.normalizePath("foo/bar/.."));
+        assertEquals("bar", IOUtil.normalizePath("foo/../bar"));
+        assertEquals("/foo/baz", IOUtil.normalizePath("//foo/bar/../baz"));
+        assertEquals("~/bar", IOUtil.normalizePath("~/foo/../bar/"));
+        assertEquals("/", IOUtil.normalizePath("/../"));
+        assertEquals("bar", IOUtil.normalizePath("~/../bar"));
+        assertEquals("bar", IOUtil.normalizePath("./bar"));
 
-            assertNull(IOUtil.normalizePath("../foo"));
-            assertNull(IOUtil.normalizePath("foo/../../bar"));
-            assertNull(IOUtil.normalizePath("."));
+        assertNull(IOUtil.normalizePath("../foo"));
+        assertNull(IOUtil.normalizePath("foo/../../bar"));
+        assertNull(IOUtil.normalizePath("."));
 
-            assertTrue(IOUtil.equalsNormalizedPaths("foo/../bar", "bar/./"));
-        }
+        assertTrue(IOUtil.equalsNormalizedPaths("foo/../bar", "bar/./"));
+    }
 
-        if (SystemUtils.IS_OS_WINDOWS) {
-            assertEquals("ab\\cd.txt", IOUtil.normalizePath("ab\\ef\\..\\cd.txt"));
-            assertEquals("\\a.txt", IOUtil.normalizePath("\\x\\..\\..\\a.txt"));
-            assertEquals("\\foo", IOUtil.normalizePath("\\foo\\\\"));
-            assertEquals("\\foo", IOUtil.normalizePath("\\foo\\.\\"));
-            assertEquals("\\bar", IOUtil.normalizePath("\\foo\\..\\bar"));
-            assertEquals("\\bar", IOUtil.normalizePath("\\foo\\..\\bar\\"));
-            assertEquals("\\baz", IOUtil.normalizePath("\\foo\\..\\bar\\..\\baz"));
-            assertEquals("\\\\foo\\bar\\", IOUtil.normalizePath("\\\\foo\\bar"));
-            assertEquals("\\\\foo\\bar\\baz", IOUtil.normalizePath("\\\\foo\\bar\\..\\baz"));
-            assertEquals("foo", IOUtil.normalizePath("foo\\bar\\.."));
-            assertEquals("bar", IOUtil.normalizePath("foo\\..\\bar"));
-            assertEquals("\\foo\\baz", IOUtil.normalizePath("\\foo\\bar\\..\\baz"));
-            assertEquals("\\", IOUtil.normalizePath("\\..\\"));
-            assertEquals("bar", IOUtil.normalizePath(".\\bar"));
+    @Test
+    void testNormalizePathWindows() {
+        assumeTrue(SystemUtils.IS_OS_WINDOWS);
+        assertEquals("ab\\cd.txt", IOUtil.normalizePath("ab\\ef\\..\\cd.txt"));
+        assertEquals("\\a.txt", IOUtil.normalizePath("\\x\\..\\..\\a.txt"));
+        assertEquals("\\foo", IOUtil.normalizePath("\\foo\\\\"));
+        assertEquals("\\foo", IOUtil.normalizePath("\\foo\\.\\"));
+        assertEquals("\\bar", IOUtil.normalizePath("\\foo\\..\\bar"));
+        assertEquals("\\bar", IOUtil.normalizePath("\\foo\\..\\bar\\"));
+        assertEquals("\\baz", IOUtil.normalizePath("\\foo\\..\\bar\\..\\baz"));
+        assertEquals("\\\\foo\\bar\\", IOUtil.normalizePath("\\\\foo\\bar"));
+        assertEquals("\\\\foo\\bar\\baz", IOUtil.normalizePath("\\\\foo\\bar\\..\\baz"));
+        assertEquals("foo", IOUtil.normalizePath("foo\\bar\\.."));
+        assertEquals("bar", IOUtil.normalizePath("foo\\..\\bar"));
+        assertEquals("\\foo\\baz", IOUtil.normalizePath("\\foo\\bar\\..\\baz"));
+        assertEquals("\\", IOUtil.normalizePath("\\..\\"));
+        assertEquals("bar", IOUtil.normalizePath(".\\bar"));
 
-            assertNull(IOUtil.normalizePath("\\\\..\\foo"));
-            assertNull(IOUtil.normalizePath("..\\foo"));
-            assertNull(IOUtil.normalizePath("foo\\..\\..\\bar"));
-            assertNull(IOUtil.normalizePath("."));
-            assertNull(IOUtil.normalizePath("\\\\foo\\\\.\\bar"));
-            assertNull(IOUtil.normalizePath("\\\\foo\\.\\bar"));
+        assertNull(IOUtil.normalizePath("\\\\..\\foo"));
+        assertNull(IOUtil.normalizePath("..\\foo"));
+        assertNull(IOUtil.normalizePath("foo\\..\\..\\bar"));
+        assertNull(IOUtil.normalizePath("."));
+        assertNull(IOUtil.normalizePath("\\\\foo\\\\.\\bar"));
+        assertNull(IOUtil.normalizePath("\\\\foo\\.\\bar"));
 
-            assertTrue(IOUtil.equalsNormalizedPaths("foo\\..\\bar", "bar\\.\\"));
+        assertTrue(IOUtil.equalsNormalizedPaths("foo\\..\\bar", "bar\\.\\"));
 
-            assertEquals("C:\\bar", IOUtil.normalizePath("C:\\..\\bar"));
-            assertEquals("ab\\cd.txt", IOUtil.normalizePath("ab\\ef\\..\\cd.txt"));
-            assertEquals("C:\\ab\\cd.txt", IOUtil.normalizePath("C:\\ab\\ef\\..\\.\\cd.txt"));
-            assertNull(IOUtil.normalizePath("..\\foo"));
-            assertNull(IOUtil.normalizePath("foo\\..\\..\\bar"));
-        }
+        assertEquals("C:\\bar", IOUtil.normalizePath("C:\\..\\bar"));
+        assertEquals("ab\\cd.txt", IOUtil.normalizePath("ab\\ef\\..\\cd.txt"));
+        assertEquals("C:\\ab\\cd.txt", IOUtil.normalizePath("C:\\ab\\ef\\..\\.\\cd.txt"));
+        assertNull(IOUtil.normalizePath("..\\foo"));
+        assertNull(IOUtil.normalizePath("foo\\..\\..\\bar"));
     }
 
     @Test
@@ -163,23 +163,17 @@ class IOUtilTest {
     @Test
     void testBomAwareStream() throws IOException {
         assertBomStream("No BOM".getBytes(StandardCharsets.UTF_8), "No BOM", null);
-        assertBomStream("\ufeffBOM".getBytes(StandardCharsets.UTF_8), "BOM", StandardCharsets.UTF_8.name());
-        assertBomStream("\ufeffBOM".getBytes(StandardCharsets.UTF_16LE), "BOM", StandardCharsets.UTF_16LE.name());
-        assertBomStream("\ufeffBOM".getBytes(StandardCharsets.UTF_16BE), "BOM", StandardCharsets.UTF_16BE.name());
+        assertBomStream("\ufeffBOM".getBytes(StandardCharsets.UTF_8), "BOM", StandardCharsets.UTF_8);
+        assertBomStream("\ufeffBOM".getBytes(StandardCharsets.UTF_16LE), "BOM", StandardCharsets.UTF_16LE);
+        assertBomStream("\ufeffBOM".getBytes(StandardCharsets.UTF_16BE), "BOM", StandardCharsets.UTF_16BE);
     }
 
-    private void assertBomStream(byte[] data, String expectedData, String expectedCharset) throws IOException {
+    private void assertBomStream(byte[] data, String expectedData, Charset expectedCharset) throws IOException {
         try (IOUtil.BomAwareInputStream stream = new IOUtil.BomAwareInputStream(new ByteArrayInputStream(data))) {
-            if (expectedCharset != null) {
-                assertTrue(stream.hasBom());
-                assertEquals(expectedCharset, stream.getBomCharsetName());
-                assertEquals(expectedData, new String(IOUtil.toByteArray(stream), stream.getBomCharsetName()));
-
-            } else {
-                assertFalse(stream.hasBom());
-                assertNull(stream.getBomCharsetName());
-                assertEquals(expectedData, new String(IOUtil.toByteArray(stream), StandardCharsets.UTF_8));
-            }
+            assertEquals(expectedCharset != null, stream.hasBom());
+            assertEquals(expectedCharset, stream.getBomCharset());
+            Charset decodingCharset = expectedCharset != null ? expectedCharset : StandardCharsets.UTF_8;
+            assertEquals(expectedData, new String(IOUtil.toByteArray(stream), decodingCharset));
         }
     }
 
@@ -204,9 +198,7 @@ class IOUtilTest {
     void testInputStreamFromReader2() throws IOException {
         int size = 8192 + 8192 + 10;
         char[] data = new char[size];
-        for (int i = 0; i < size; i++) {
-            data[i] = 'A';
-        }
+        Arrays.fill(data, 'A');
         data[8192] = 'ä'; // block size border - in UTF-8 these are two bytes. Decoding needs to take the bytes
         // from previous block and new block
         try (InputStream inputStream = IOUtil.fromReader(new StringReader(new String(data)))) {
@@ -219,9 +211,7 @@ class IOUtilTest {
     void testCopyStream() throws IOException {
         int size = 8192 + 8192 + 10;
         byte[] data = new byte[size];
-        for (int i = 0; i < size; i++) {
-            data[i] = 'A';
-        }
+        Arrays.fill(data, (byte) 'A');
         try (InputStream stream = new ByteArrayInputStream(data);
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             IOUtil.copy(stream, out);
@@ -235,9 +225,7 @@ class IOUtilTest {
     void testCopyReader() throws IOException {
         int size = 8192 + 8192 + 10;
         char[] data = new char[size];
-        for (int i = 0; i < size; i++) {
-            data[i] = 'A';
-        }
+        Arrays.fill(data, 'A');
         try (Reader reader = new CharArrayReader(data);
              StringWriter writer = new StringWriter()) {
             IOUtil.copy(reader, writer);

@@ -7,8 +7,7 @@ package net.sourceforge.pmd.test;
 import static net.sourceforge.pmd.util.internal.AuxClasspathUtil.getPlatformClasspath;
 import static net.sourceforge.pmd.util.internal.AuxClasspathUtil.getRuntimeClasspath;
 import static net.sourceforge.pmd.util.internal.AuxClasspathUtil.toRawClasspath;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -72,20 +71,13 @@ public abstract class RuleTst {
      * Find a rule in a certain ruleset by name.
      */
     public static Rule findRule(String ruleSet, String ruleName) {
-        try {
-            RuleSet parsedRset = new RuleSetLoader().warnDeprecated(false).loadFromResource(ruleSet);
-            Rule rule = parsedRset.getRuleByName(ruleName);
-            if (rule == null) {
-                fail("Rule " + ruleName + " not found in ruleset " + ruleSet);
-            } else {
-                rule.setRuleSetName(ruleSet);
-            }
-            return rule;
-        } catch (RuleSetLoadException e) {
-            e.printStackTrace();
-            fail("Couldn't find ruleset " + ruleSet);
-            return null;
-        }
+        RuleSet parsedRset = assertDoesNotThrow(
+                () -> new RuleSetLoader().warnDeprecated(false).loadFromResource(ruleSet),
+                "Couldn't find ruleset " + ruleSet);
+        Rule rule = parsedRset.getRuleByName(ruleName);
+        assertNotNull(rule, "Rule " + ruleName + " not found in ruleset " + ruleSet);
+        rule.setRuleSetName(ruleSet);
+        return rule;
     }
 
     /**

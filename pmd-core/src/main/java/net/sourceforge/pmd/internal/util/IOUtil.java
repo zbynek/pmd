@@ -424,7 +424,7 @@ public final class IOUtil {
      * Input stream that skips an optional byte order mark at the beginning
      * of the stream. Whether the stream had a byte order mark (encoded in either UTF-8,
      * UTF-16LE or UTF-16BE) can be checked with {@link #hasBom()}. The corresponding
-     * charset can be retrieved with {@link #getBomCharsetName()}.
+     * charset can be retrieved with {@link #getBomCharset()}.
      * </p>
      *
      * <p>
@@ -436,7 +436,7 @@ public final class IOUtil {
         private byte[] begin;
         int beginIndex;
 
-        private String charset;
+        private Charset charset;
 
         public BomAwareInputStream(InputStream in) {
             super(in);
@@ -448,13 +448,13 @@ public final class IOUtil {
             try {
                 int count = in.read(bytes);
                 if (count == 3 && bytes[0] == (byte) 0xef && bytes[1] == (byte) 0xbb && bytes[2] == (byte) 0xbf) {
-                    charset = StandardCharsets.UTF_8.name();
+                    charset = StandardCharsets.UTF_8;
                     return new byte[0]; // skip all 3 bytes
                 } else if (count >= 2 && bytes[0] == (byte) 0xfe && bytes[1] == (byte) 0xff) {
-                    charset = StandardCharsets.UTF_16BE.name();
+                    charset = StandardCharsets.UTF_16BE;
                     return new byte[] { bytes[2] };
                 } else if (count >= 2 && bytes[0] == (byte) 0xff && bytes[1] == (byte) 0xfe) {
-                    charset = StandardCharsets.UTF_16LE.name();
+                    charset = StandardCharsets.UTF_16LE;
                     return new byte[] { bytes[2] };
                 } else if (count == 3) {
                     return bytes;
@@ -500,6 +500,10 @@ public final class IOUtil {
         }
 
         public String getBomCharsetName() {
+            return charset == null ? null : charset.name();
+        }
+
+        public Charset getBomCharset() {
             return charset;
         }
     }

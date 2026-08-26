@@ -7,10 +7,10 @@ package net.sourceforge.pmd.lang.ast.impl;
 import static net.sourceforge.pmd.lang.ast.impl.DummyTreeUtil.node;
 import static net.sourceforge.pmd.lang.ast.impl.DummyTreeUtil.root;
 import static net.sourceforge.pmd.lang.ast.impl.DummyTreeUtil.tree;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
 
@@ -192,12 +192,10 @@ class AbstractNodeTest {
      */
     @Test
     void testRemoveChildAtIndexWithInvalidIndex() {
-        try {
+        assertDoesNotThrow(() -> {
             rootNode.removeChildAtIndex(-1);
             rootNode.removeChildAtIndex(rootNode.getNumChildren());
-        } catch (final Exception e) {
-            fail("No exception was expected.");
-        }
+        });
     }
 
     /**
